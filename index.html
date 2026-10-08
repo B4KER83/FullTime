@@ -539,33 +539,42 @@ function refreshData(){
     // Only Fixtures + Results are fetched. The upstream League-table
     // endpoint has never returned rows (always an empty table) and currently
     // hangs for 50s+, so the table is calculated from results instead.
+    //
+    // Fixtures and Results are applied to the screen separately, the moment
+    // each one arrives, so a slow Results call never holds back the fixtures.
     var jobs = divisions.map(function(div){
-      return Promise.all([
-        fulltimeApi.getFixtures(div.externalId, div.seasonId),
-        fulltimeApi.getResults(div.externalId, div.seasonId)
-      ]).then(function(res){
-        var fx = res[0], rs = res[1];
-        var prev = perDivision[div.externalId] || {};
-        var entry = {
-          name: div.name,
-          fixturesRaw: fx.ok ? fx.data : (prev.fixturesRaw || []),
-          resultsRaw: rs.ok ? rs.data : (prev.resultsRaw || []),
-          tableRaw: null,
-          errors: {
-            fixtures: fx.ok ? null : (fx.error || "unavailable"),
-            results: rs.ok ? null : (rs.error || "unavailable")
-          },
-          lastOk: { fixtures: fx.ok, results: rs.ok }
-        };
+      function apply(kind, r){
+        var entry = perDivision[div.externalId] || {};
+        entry.name = div.name;
+        entry.fixturesRaw = entry.fixturesRaw || [];
+        entry.resultsRaw = entry.resultsRaw || [];
+        entry.tableRaw = null;
+        entry.errors = entry.errors || {};
+        entry.lastOk = entry.lastOk || {};
+        if (kind === "fixtures") {
+          if (r.ok) entry.fixturesRaw = r.data;      // on failure keep the last good copy
+          entry.errors.fixtures = r.ok ? null : (r.error || "unavailable");
+          entry.lastOk.fixtures = r.ok;
+        } else {
+          if (r.ok) entry.resultsRaw = r.data;
+          entry.errors.results = r.ok ? null : (r.error || "unavailable");
+          entry.lastOk.results = r.ok;
+        }
         perDivision[div.externalId] = entry;
 
-        (entry.fixturesRaw || []).forEach(function(r){
-          var dt = firstDefined(r, ["fixtureDateTime","matchDate","date","kickOff"]);
-          var iso = parseFixtureDateTime(dt);
-          if (iso) years.push(iso.slice(0,4));
-        });
+        if (kind === "fixtures") {
+          (entry.fixturesRaw || []).forEach(function(m){
+            var dt = firstDefined(m, ["fixtureDateTime","matchDate","date","kickOff"]);
+            var iso = parseFixtureDateTime(dt);
+            if (iso) years.push(iso.slice(0,4));
+          });
+        }
         publish(false);
-      });
+      }
+      return Promise.all([
+        fulltimeApi.getFixtures(div.externalId, div.seasonId).then(function(r){ apply("fixtures", r); }),
+        fulltimeApi.getResults(div.externalId, div.seasonId).then(function(r){ apply("results", r); })
+      ]);
     });
 
     return Promise.all(jobs).then(function(){
@@ -596,6 +605,9 @@ function getDivisionTable(externalId){
     return { rows: apiRows.map(mapTableRow), source: "api" };
   }
   var matches = getDivisionMatches(externalId);
+  // No scored results yet (e.g. fixtures have arrived but results haven't):
+  // a table of everyone on 0 points would look like real positions, so show none.
+  if (!matches.some(function(m){ return m.hasScore; })) return { rows: [], source: null };
   var teamNames = {};
   matches.forEach(function(m){ teamNames[m.home]=1; teamNames[m.away]=1; });
   var rows = computeTableFromMatches(matches, Object.keys(teamNames));
