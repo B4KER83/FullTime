@@ -1,0 +1,1291 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>⚽️ U12 Results</title>
+<style>
+  :root{
+    --bg:#0d1117; --card:#161b22; --card-border:#232a35; --text:#e6edf3; --muted:#8b98a5;
+    --green:#2ea043; --green-bright:#3fb950; --red:#f85149; --amber:#d29922; --blue:#58a6ff;
+    --fav-color:#3fb950;
+    --nav-h:64px;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;background:var(--bg);color:var(--text);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    overflow-x:hidden;max-width:100%;}
+  body{padding-bottom:calc(var(--nav-h) + env(safe-area-inset-bottom));
+    overscroll-behavior-x:none;touch-action:pan-y;}
+  a{color:inherit;text-decoration:none;}
+  header.top{position:sticky;top:0;z-index:10;background:#000;border-bottom:1px solid var(--card-border);
+    padding:14px 16px calc(14px + env(safe-area-inset-top)) 16px;padding-top:calc(14px + env(safe-area-inset-top));}
+  header.top h1{margin:0;font-size:17px;font-weight:700;letter-spacing:.2px;}
+  header.top .sub{margin-top:2px;font-size:12px;color:var(--muted);display:flex;gap:8px;align-items:center;flex-wrap:wrap;}
+  .badge{display:inline-block;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:600;}
+  .badge.live{background:rgba(46,160,67,.18);color:var(--green-bright);}
+  .badge.stale{background:rgba(210,153,34,.18);color:var(--amber);}
+  .badge.error{background:rgba(248,81,73,.18);color:var(--red);}
+  main{max-width:640px;margin:0 auto;padding:14px 12px 24px;}
+  h2.section{font-size:13px;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);
+    margin:22px 4px 10px;}
+  h2.section:first-child{margin-top:6px;}
+  h3.subsection{font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);
+    margin:14px 4px 6px;font-weight:700;}
+  .card{background:var(--card);border:1px solid var(--card-border);border-radius:12px;padding:12px 14px;margin-bottom:8px;}
+  .empty{color:var(--muted);font-size:14px;padding:18px 6px;text-align:center;}
+  .banner{border-radius:10px;padding:10px 14px;font-size:13px;margin-bottom:12px;line-height:1.45;}
+  .banner.warn{background:rgba(210,153,34,.12);border:1px solid rgba(210,153,34,.35);color:#e3b341;}
+  .banner.err{background:rgba(248,81,73,.12);border:1px solid rgba(248,81,73,.35);color:#ff7b72;}
+  .match{display:flex;align-items:center;gap:10px;padding:9px 2px;}
+  .match + .match{border-top:1px solid var(--card-border);}
+  .match .date{width:44px;flex:0 0 44px;font-size:11px;color:var(--muted);line-height:1.2;}
+  .match .teams{flex:1;min-width:0;font-size:14px;}
+  .match .teams .t{display:flex;justify-content:space-between;gap:6px;align-items:center;}
+  .match .teams .name{overflow-wrap:break-word;min-width:0;flex:1 1 auto;}
+  .match .teams .name.fav{color:var(--fav-color);font-weight:700;}
+  .match .score{font-weight:700;font-variant-numeric:tabular-nums;flex:0 0 auto;font-size:14px;}
+  .match .vs{color:var(--muted);font-size:12px;flex:0 0 auto;}
+  .match .meta{font-size:11px;color:var(--muted);margin-top:2px;}
+  .status-tag{font-size:10px;font-weight:700;text-transform:uppercase;padding:1px 6px;border-radius:6px;margin-left:6px;}
+  .status-tag.postponed,.status-tag.cancelled{background:rgba(248,81,73,.18);color:var(--red);}
+  .status-tag.rearranged{background:rgba(210,153,34,.18);color:var(--amber);}
+  .div-card{display:flex;align-items:center;padding:0;gap:0;}
+  .div-card .div-link{flex:1;min-width:0;display:flex;justify-content:space-between;align-items:center;padding:14px;color:inherit;text-decoration:none;}
+  .div-card .name{font-size:15px;font-weight:600;overflow-wrap:break-word;}
+  .div-card .chev{color:var(--muted);flex:0 0 auto;margin-left:8px;}
+  .div-toggle{flex:0 0 auto;background:none;border:none;border-left:1px solid var(--card-border);
+    color:var(--muted);font-size:19px;padding:0 16px;min-width:52px;min-height:52px;cursor:pointer;}
+  .div-toggle.on{color:var(--green-bright);}
+  table.league{width:100%;border-collapse:collapse;font-size:13px;}
+  table.league th{text-align:left;color:var(--muted);font-weight:600;font-size:11px;padding:6px 4px;border-bottom:1px solid var(--card-border);}
+  table.league td{padding:7px 4px;border-bottom:1px solid var(--card-border);white-space:nowrap;}
+  table.league td.team{white-space:normal;max-width:150px;overflow:hidden;text-overflow:ellipsis;}
+  .table-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch;touch-action:pan-x pan-y;max-width:100%;}
+  .star-btn{background:none;border:none;font-size:20px;cursor:pointer;color:var(--amber);padding:4px 6px;line-height:1;}
+  .star-btn.off{color:var(--muted);}
+  .team-hdr{display:flex;justify-content:space-between;align-items:flex-start;gap:8px;}
+  .team-hdr h1{font-size:19px;margin:0 0 4px;}
+  .stat-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:12px 0;}
+  .stat-grid .stat{background:var(--card);border:1px solid var(--card-border);border-radius:10px;padding:8px 4px;text-align:center;}
+  .stat-grid .stat .v{font-size:16px;font-weight:700;}
+  .stat-grid .stat .l{font-size:10px;color:var(--muted);text-transform:uppercase;margin-top:2px;}
+  input.search{width:100%;padding:12px 14px;border-radius:10px;border:1px solid var(--card-border);
+    background:var(--card);color:var(--text);font-size:15px;margin-bottom:10px;}
+  input.search:focus{outline:1px solid var(--green);}
+  .tabs{display:flex;gap:6px;margin-bottom:12px;background:var(--card);border:1px solid var(--card-border);border-radius:10px;padding:3px;}
+  .tabs button{flex:1;padding:9px 4px;border:none;background:none;color:var(--muted);font-size:13px;font-weight:600;border-radius:8px;cursor:pointer;}
+  .tabs button.active{background:var(--green);color:#fff;}
+  select.filter{width:100%;padding:10px 12px;border-radius:10px;border:1px solid var(--card-border);
+    background:var(--card);color:var(--text);font-size:14px;margin-bottom:10px;}
+  nav.bottom{position:fixed;bottom:0;left:0;right:0;z-index:20;background:#000;border-top:1px solid var(--card-border);
+    display:flex;padding-bottom:env(safe-area-inset-bottom);}
+  nav.bottom a{flex:1;text-align:center;padding:9px 2px 7px;font-size:10px;color:var(--muted);}
+  nav.bottom a .ic{display:block;font-size:19px;margin-bottom:1px;}
+  nav.bottom a.active{color:var(--green-bright);}
+  .btn{display:inline-block;background:var(--green);color:#fff;border:none;border-radius:8px;
+    padding:9px 16px;font-size:13px;font-weight:600;cursor:pointer;}
+  .btn.ghost{background:none;border:1px solid var(--card-border);color:var(--text);}
+  .colour-row{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin:4px 0 16px;}
+  .colour-swatch{width:34px;height:34px;border-radius:50%;border:2px solid transparent;cursor:pointer;padding:0;}
+  .colour-swatch.on{border-color:var(--text);}
+  .colour-custom{width:34px;height:34px;border-radius:50%;border:none;padding:0;background:none;cursor:pointer;overflow:hidden;}
+  .colour-custom::-webkit-color-swatch-wrapper{padding:0;}
+  .colour-custom::-webkit-color-swatch{border:2px solid var(--card-border);border-radius:50%;}
+  .fav-card{padding:14px;}
+  .fav-card .fav-card-link{display:block;color:inherit;text-decoration:none;}
+  .fav-card .row{font-size:13px;color:var(--muted);margin-top:6px;}
+  .fav-card .row b{color:var(--text);font-weight:600;}
+  .fav-card .colour-row{margin:12px 0 0;padding-top:10px;border-top:1px solid var(--card-border);}
+  .center-msg{text-align:center;padding:60px 20px;color:var(--muted);font-size:14px;line-height:1.6;}
+  .center-msg .big{font-size:34px;margin-bottom:10px;}
+  code.small{background:#1c2128;padding:2px 5px;border-radius:5px;font-size:12px;}
+  .spinner{width:16px;height:16px;border:2px solid var(--card-border);border-top-color:var(--green-bright);
+    border-radius:50%;display:inline-block;animation:spin .8s linear infinite;vertical-align:-3px;}
+  @keyframes spin{to{transform:rotate(360deg);}}
+  @media (min-width:640px){
+    nav.bottom{max-width:640px;left:50%;transform:translateX(-50%);border-left:1px solid var(--card-border);border-right:1px solid var(--card-border);border-radius:14px 14px 0 0;}
+  }
+
+  /* ---- Teletext style (Favourites page switch). Only applies when <html class="teletext">. ---- */
+  html.teletext *{border-radius:0 !important;text-shadow:none;}
+  html.teletext,html.teletext body{background:#000;color:#fff;font-family:"Courier New",Courier,monospace;letter-spacing:.4px;}
+  html.teletext header.top,html.teletext main,html.teletext nav.bottom{text-transform:uppercase;}
+  html.teletext header.top{background:#00f;border-bottom:0;}
+  html.teletext header.top h1{color:#ff0;}
+  html.teletext header.top .sub{color:#0ff;}
+  html.teletext header.top a,html.teletext header.top + button{color:#fff !important;}   /* Search link + Update button */
+  html.teletext .badge{font-weight:700;}
+  html.teletext .badge.live{background:#0f0;color:#000;}
+  html.teletext .badge.stale{background:#ff0;color:#000;}
+  html.teletext .badge.error{background:#f00;color:#fff;}
+  html.teletext h2.section{background:#00f;color:#ff0;padding:3px 8px;margin:18px 0 8px;font-size:14px;letter-spacing:1px;}
+  html.teletext h3.subsection{color:#0ff;margin:12px 0 4px;}
+  html.teletext .card{background:#000;border:0;border-left:4px solid #0ff;padding:8px 10px;}
+  html.teletext .match + .match{border-top:0;}
+  html.teletext .match .date{color:#0ff;}
+  html.teletext .match .score{color:#ff0;}
+  html.teletext .match .vs{color:#0ff;}
+  html.teletext .match .meta{color:#0f0;}
+  html.teletext .match .teams .name.fav{color:#ff0;}
+  html.teletext .status-tag.postponed,html.teletext .status-tag.cancelled{background:#f00;color:#fff;}
+  html.teletext .status-tag.rearranged{background:#ff0;color:#000;}
+  html.teletext .empty,html.teletext .center-msg{color:#0ff;}
+  html.teletext .banner.err,html.teletext .banner.warn{background:#f00;border:0;color:#fff;}
+  html.teletext .btn{background:#0f0;color:#000;font-family:inherit;font-weight:700;}
+  html.teletext .btn.ghost{background:#f00;color:#fff;border:0;}
+  html.teletext .tabs{background:#000;border:0;padding:0;gap:4px;}
+  html.teletext .tabs button{color:#0ff;font-family:inherit;text-transform:uppercase;border:2px solid #0ff;}
+  html.teletext .tabs button.active{background:#ff0;color:#000;border-color:#ff0;}
+  html.teletext table.league th{color:#0ff;border-bottom:2px solid #0ff;}
+  html.teletext table.league td{border-bottom:0;}
+  html.teletext .star-btn{color:#ff0;}
+  html.teletext .star-btn.off{color:#0ff;}
+  html.teletext .fav-card .row,html.teletext .fav-card .row b{color:#fff;}
+  html.teletext .fav-card .row{color:#0f0;}
+  html.teletext .div-toggle{border-left:0;color:#0ff;}
+  html.teletext .div-toggle.on{color:#0f0;}
+  html.teletext .stat-grid .stat{background:#000;border:2px solid #0ff;}
+  html.teletext .stat-grid .stat .l{color:#0ff;}
+  html.teletext input.search,html.teletext select.filter{background:#000;border:2px solid #0ff;color:#fff;font-family:inherit;}
+  /* bottom navigation as the four-colour "fastext" buttons */
+  html.teletext nav.bottom{background:#000;border:0;}
+  html.teletext nav.bottom a{color:#000;font-weight:700;}
+  html.teletext nav.bottom a:nth-child(1){background:#f00;color:#fff;}
+  html.teletext nav.bottom a:nth-child(2){background:#0f0;}
+  html.teletext nav.bottom a:nth-child(3){background:#ff0;}
+  html.teletext nav.bottom a:nth-child(4){background:#0ff;}
+  html.teletext nav.bottom a:nth-child(5){background:#f0f;color:#fff;}
+  html.teletext nav.bottom a.active{box-shadow:inset 0 -5px 0 #fff;}
+</style>
+</head>
+<body>
+
+<header class="top">
+  <h1>⚽️ U12 Results</h1>
+  <div class="sub">
+    <span>Foxes Sunday League · Burton Junior League</span>
+    <span id="seasonLabel"></span>
+    <span id="statusBadge" class="badge stale">Loading…</span>
+  </div>
+</header>
+
+<main id="app"></main>
+
+<nav class="bottom" id="bottomNav">
+  <a href="#/" data-route="/"><span class="ic">🏠</span>Home</a>
+  <a href="#/fixtures" data-route="/fixtures"><span class="ic">📅</span>Fixtures</a>
+  <a href="#/results" data-route="/results"><span class="ic">⚽</span>Results</a>
+  <a href="#/divisions" data-route="/divisions"><span class="ic">🏆</span>Divisions</a>
+  <a href="#/favourites" data-route="/favourites"><span class="ic">⭐</span>Favourites</a>
+</nav>
+
+<script>
+(function(){
+"use strict";
+
+// ---------------------------------------------------------------------
+// CONFIG
+// ---------------------------------------------------------------------
+var CONFIG = {
+  // Browsers can't call faapi.jwhsolutions.co.uk directly (no CORS
+  // headers from that host, confirmed by a live "Couldn't reach the
+  // Full-Time results service" error on this site). This points at the
+  // small stateless Worker in foxes-proxy-worker.js instead, which
+  // forwards requests server-to-server and adds the CORS headers back.
+  // Replace this with your own Worker's *.workers.dev URL after deploying it.
+  API_BASE: "https://foxes-proxy.tomfbaker.workers.dev",
+  // Each competition: a league + season, and which of its divisions to show —
+  // either every division whose name contains `nameFilter`, or exact `divisionIds`.
+  COMPETITIONS: [
+    { leagueId: "3326454",   seasonId: "503728397", name: "Leicestershire Foxes Sunday League", nameFilter: "U12" },
+    { leagueId: "277092267", seasonId: "188709863", name: "Burton Junior Football League",     divisionIds: ["366287585"] } // BJFL U12
+  ],
+  DEFAULT_FAVOURITES: ["Mountsorrel Juniors U12 Shadowcats", "Ashby United Community FC U12 Mavericks"],
+  CACHE_KEY: "foxes_u12_cache_v2",
+  FAV_KEY: "foxes_u12_favourites_v2",
+  HIDDEN_DIVISIONS_KEY: "foxes_u12_hidden_divisions_v1",
+  FAV_COLORS_KEY: "foxes_u12_fav_colours_v1",
+  DEFAULT_FAV_COLOR: "#3fb950",
+  OLD_FAV_KEY: "foxes_u12_favourites_v1",
+  TELETEXT_KEY: "foxes_u12_teletext_v1",
+  FETCH_TIMEOUT_MS: 25000, // Fixtures/Results normally answer in ~1s; the Worker itself gives up at ~30s
+  RETRIES: 1
+};
+
+// ---------------------------------------------------------------------
+// Small helpers (ported from the server build's utils.js / mapping.js)
+// ---------------------------------------------------------------------
+var ENTITIES = {"&amp;":"&","&lt;":"<","&gt;":">","&quot;":'"',"&#39;":"'","&apos;":"'","&nbsp;":" "};
+function decodeEntities(s){
+  if (typeof s !== "string") return s;
+  return s.replace(/&amp;|&lt;|&gt;|&quot;|&#39;|&apos;|&nbsp;/g, function(m){ return ENTITIES[m] || m; });
+}
+function cleanTeamName(name){
+  if (!name) return name;
+  return decodeEntities(String(name)).trim();
+}
+function parseFixtureDateTime(raw){
+  if (!raw || typeof raw !== "string") return null;
+  var m = raw.trim().match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})(?:\s+(\d{1,2}):(\d{2}))?/);
+  if (!m) return null;
+  var dd = m[1], mm = m[2], yy = m[3], hh = m[4], min = m[5];
+  var year = parseInt(yy, 10);
+  if (year < 100) year += 2000;
+  var day = parseInt(dd, 10), month = parseInt(mm, 10);
+  if (month < 1 || month > 12 || day < 1 || day > 31) return null;
+  var hour = hh !== undefined ? parseInt(hh, 10) : 0;
+  var minute = min !== undefined ? parseInt(min, 10) : 0;
+  var date = new Date(Date.UTC(year, month - 1, day, hour, minute));
+  if (isNaN(date.getTime())) return null;
+  return date.toISOString();
+}
+function firstDefined(obj, keys){
+  for (var i=0;i<keys.length;i++){
+    var k = keys[i];
+    if (obj[k] !== undefined && obj[k] !== null && obj[k] !== "") return obj[k];
+  }
+  return undefined;
+}
+function numOrNull(v){
+  if (v === undefined || v === null || v === "") return null;
+  var n = Number(v);
+  return isNaN(n) ? null : n;
+}
+function parseScoreString(s){
+  if (typeof s !== "string") return null;
+  var m = s.match(/(\d+)\s*[-:–]\s*(\d+)/);
+  if (!m) return null;
+  return { home: parseInt(m[1],10), away: parseInt(m[2],10) };
+}
+function inferStatus(raw){
+  var statusField = firstDefined(raw, ["status","matchStatus","fixtureStatus","result","score"]);
+  var text = String(statusField || "").toLowerCase();
+  if (text.indexOf("postpon") !== -1) return "postponed";
+  if (text.indexOf("cancel") !== -1) return "cancelled";
+  if (text.indexOf("rearrang") !== -1 || text.indexOf("re-arrang") !== -1) return "rearranged";
+  if (text.indexOf("complet") !== -1 || text.indexOf("played") !== -1 || text.indexOf("full time") !== -1) return "completed";
+  return null;
+}
+function mapFixture(raw, divisionName){
+  var rawDateTime = firstDefined(raw, ["fixtureDateTime","matchDate","date","kickOff"]);
+  return {
+    home: cleanTeamName(firstDefined(raw, ["homeTeam","home","homeTeamName"])),
+    away: cleanTeamName(firstDefined(raw, ["awayTeam","away","awayTeamName"])),
+    rawDateTime: rawDateTime || null,
+    isoDateTime: parseFixtureDateTime(rawDateTime),
+    location: firstDefined(raw, ["location","venue","ground"]) || null,
+    competition: firstDefined(raw, ["competition","division","divisionName"]) || divisionName || null,
+    status: inferStatus(raw) || "scheduled",
+    homeScore: null, awayScore: null, hasScore: false
+  };
+}
+function mapResult(raw, divisionName){
+  var rawDateTime = firstDefined(raw, ["fixtureDateTime","matchDate","date","playedOn"]);
+  var scoreStr = firstDefined(raw, ["score","result","scoreLine"]);
+  var parsedScore = parseScoreString(scoreStr);
+  var homeScoreRaw = firstDefined(raw, ["homeScore","homeGoals","homeTeamScore","fthg"]);
+  var awayScoreRaw = firstDefined(raw, ["awayScore","awayGoals","awayTeamScore","ftag"]);
+  var homeScore = homeScoreRaw !== undefined ? Number(homeScoreRaw) : (parsedScore ? parsedScore.home : null);
+  var awayScore = awayScoreRaw !== undefined ? Number(awayScoreRaw) : (parsedScore ? parsedScore.away : null);
+  return {
+    home: cleanTeamName(firstDefined(raw, ["homeTeam","home","homeTeamName"])),
+    away: cleanTeamName(firstDefined(raw, ["awayTeam","away","awayTeamName"])),
+    rawDateTime: rawDateTime || null,
+    isoDateTime: parseFixtureDateTime(rawDateTime),
+    location: firstDefined(raw, ["location","venue","ground"]) || null,
+    competition: firstDefined(raw, ["competition","division","divisionName"]) || divisionName || null,
+    status: inferStatus(raw) || "completed",
+    homeScore: (homeScore === null || isNaN(homeScore)) ? null : homeScore,
+    awayScore: (awayScore === null || isNaN(awayScore)) ? null : awayScore,
+    hasScore: !(homeScore === null || isNaN(homeScore) || awayScore === null || isNaN(awayScore))
+  };
+}
+function mapTableRow(raw){
+  return {
+    position: numOrNull(firstDefined(raw, ["position","rank","pos"])),
+    teamName: cleanTeamName(firstDefined(raw, ["teamName","team","name"])),
+    played: numOrNull(firstDefined(raw, ["played","p","pld"])),
+    won: numOrNull(firstDefined(raw, ["won","w","wins"])),
+    drawn: numOrNull(firstDefined(raw, ["drawn","d","draws"])),
+    lost: numOrNull(firstDefined(raw, ["lost","l","losses"])),
+    goalsFor: numOrNull(firstDefined(raw, ["goalsFor","gf","for"])),
+    goalsAgainst: numOrNull(firstDefined(raw, ["goalsAgainst","ga","against"])),
+    goalDifference: numOrNull(firstDefined(raw, ["goalDifference","gd","goalDiff"])),
+    points: numOrNull(firstDefined(raw, ["points","pts"]))
+  };
+}
+
+// Merge a division's Fixtures list (whole-season, no scores) with its
+// Results list (completed matches, with scores) into one match list.
+// A fixture is matched to a result by team pair; if no fixtures data
+// exists at all (e.g. Fixtures failed but Results worked), results are
+// still shown standalone. Never invents a match that neither endpoint
+// returned.
+function mergeDivisionMatches(fixturesRaw, resultsRaw, divisionName){
+  var fixtures = (fixturesRaw || []).map(function(r){ return mapFixture(r, divisionName); });
+  var results = (resultsRaw || []).map(function(r){ return mapResult(r, divisionName); });
+  var resultsByPair = {};
+  results.forEach(function(r, idx){
+    var key = r.home + "|" + r.away;
+    (resultsByPair[key] = resultsByPair[key] || []).push(idx);
+  });
+  var used = {};
+  var merged = fixtures.map(function(f){
+    var key = f.home + "|" + f.away;
+    var candidates = resultsByPair[key] || [];
+    for (var i=0;i<candidates.length;i++){
+      var idx = candidates[i];
+      if (used[idx]) continue;
+      used[idx] = true;
+      var r = results[idx];
+      var out = {};
+      for (var k in f) out[k] = f[k];
+      for (var k2 in r) out[k2] = r[k2];
+      return out;
+    }
+    return f;
+  });
+  results.forEach(function(r, idx){
+    if (!used[idx]) merged.push(r);
+  });
+  return merged;
+}
+
+function computeTableFromMatches(matches, teamNames){
+  var stats = {};
+  (teamNames || []).forEach(function(name){
+    stats[name] = { teamName: name, played:0, won:0, drawn:0, lost:0, goalsFor:0, goalsAgainst:0, goalDifference:0, points:0 };
+  });
+  function ensure(name){
+    if (!stats[name]) stats[name] = { teamName: name, played:0, won:0, drawn:0, lost:0, goalsFor:0, goalsAgainst:0, goalDifference:0, points:0 };
+    return stats[name];
+  }
+  matches.forEach(function(m){
+    if (!m.hasScore || m.status === "postponed" || m.status === "cancelled") return;
+    var h = ensure(m.home), a = ensure(m.away);
+    h.played++; a.played++;
+    h.goalsFor += m.homeScore; h.goalsAgainst += m.awayScore;
+    a.goalsFor += m.awayScore; a.goalsAgainst += m.homeScore;
+    if (m.homeScore > m.awayScore){ h.won++; h.points+=3; a.lost++; }
+    else if (m.homeScore < m.awayScore){ a.won++; a.points+=3; h.lost++; }
+    else { h.drawn++; a.drawn++; h.points++; a.points++; }
+  });
+  var rows = Object.keys(stats).map(function(k){
+    var s = stats[k];
+    s.goalDifference = s.goalsFor - s.goalsAgainst;
+    return s;
+  });
+  rows.sort(function(a,b){
+    if (b.points !== a.points) return b.points - a.points;
+    if (b.goalDifference !== a.goalDifference) return b.goalDifference - a.goalDifference;
+    if (b.goalsFor !== a.goalsFor) return b.goalsFor - a.goalsFor;
+    return a.teamName.localeCompare(b.teamName);
+  });
+  rows.forEach(function(r, i){ r.position = i + 1; });
+  return rows;
+}
+
+// ---------------------------------------------------------------------
+// fulltimeApi — the only code that talks to the external API.
+// Never throws on an ordinary HTTP failure; returns {ok, data|error}.
+// ---------------------------------------------------------------------
+var fulltimeApi = (function(){
+  function sleep(ms){ return new Promise(function(res){ setTimeout(res, ms); }); }
+
+  function fetchWithRetry(url, retries){
+    if (retries === undefined) retries = CONFIG.RETRIES;
+    var attempt = 0;
+    function tryOnce(){
+      var controller = ("AbortController" in window) ? new AbortController() : null;
+      var timer = null;
+      if (controller) timer = setTimeout(function(){ controller.abort(); }, CONFIG.FETCH_TIMEOUT_MS);
+      var opts = { headers: { accept: "application/json" } };
+      if (controller) opts.signal = controller.signal;
+      return fetch(url, opts).then(function(res){
+        if (timer) clearTimeout(timer);
+        if (res.ok) {
+          return res.json().then(function(data){ return { ok:true, data:data, status:res.status }; });
+        }
+        if (res.status < 500) {
+          return res.json().catch(function(){ return null; }).then(function(body){
+            var msg = (body && body.error && body.error.message) || (body && body.title) || ("HTTP " + res.status);
+            return { ok:false, status:res.status, error: msg, terminal:true };
+          });
+        }
+        return Promise.reject(new Error("HTTP " + res.status));
+      }).catch(function(err){
+        if (timer) clearTimeout(timer);
+        var msg = (err && err.message) || String(err);
+        if (attempt < retries) {
+          attempt++;
+          var backoff = 700 * Math.pow(2, attempt) + Math.floor(Math.random()*250);
+          return sleep(backoff).then(tryOnce);
+        }
+        return { ok:false, status:null, error: msg };
+      });
+    }
+    return tryOnce();
+  }
+
+  var base = CONFIG.API_BASE.replace(/\/$/, "");
+  return {
+    searchDivisions: function(leagueId){
+      return fetchWithRetry(base + "/api/Search/divisions/" + encodeURIComponent(leagueId));
+    },
+    getFixtures: function(divisionId, season){
+      return fetchWithRetry(base + "/api/Fixtures/" + encodeURIComponent(divisionId) + "/season/" + encodeURIComponent(season));
+    },
+    getResults: function(divisionId, season){
+      return fetchWithRetry(base + "/api/Results/" + encodeURIComponent(divisionId) + "/season/" + encodeURIComponent(season));
+    }
+  };
+})();
+
+// ---------------------------------------------------------------------
+// Local cache (localStorage) — this IS the "database". Stale-while-
+// revalidate: render whatever's cached immediately, refresh in the
+// background, never blank the screen because of a failed fetch.
+// ---------------------------------------------------------------------
+var Cache = {
+  load: function(){
+    try {
+      var raw = localStorage.getItem(CONFIG.CACHE_KEY);
+      return raw ? JSON.parse(raw) : null;
+    } catch(e){ return null; }
+  },
+  save: function(data){
+    try { localStorage.setItem(CONFIG.CACHE_KEY, JSON.stringify(data)); } catch(e){ /* storage full/unavailable — ignore */ }
+  }
+};
+
+var state = {
+  cache: Cache.load(),   // { updatedAt, seasonLabel, divisions:[{externalId,name}], perDivision:{}, lastError }
+  favourites: loadFavourites(),
+  hiddenDivisions: loadHiddenDivisions(),   // division externalIds switched off (toggle lives on Divisions page, hides everywhere)
+  favColors: loadFavColors(),   // { teamName: "#hex" } — per-team favourite highlight colour
+  teletext: loadTeletext(),   // old-teletext page style on/off (switch at the bottom of Favourites)
+  loading: false,
+  fetchBlocked: false,   // set true if the very first attempt fails with no cache — likely CORS/network
+  lastRefreshTime: 0,   // timestamp of last successful refresh; only refresh once per hour on Sunday 10am-3pm
+  route: parseHash()
+};
+
+function loadTeletext(){
+  try { return localStorage.getItem(CONFIG.TELETEXT_KEY) === "1"; } catch(e){ return false; }
+}
+function setTeletext(on){
+  state.teletext = !!on;
+  try { localStorage.setItem(CONFIG.TELETEXT_KEY, on ? "1" : "0"); } catch(e){}
+  document.documentElement.classList.toggle("teletext", state.teletext);
+}
+document.documentElement.classList.toggle("teletext", state.teletext);   // apply the saved choice straight away
+
+function loadFavourites(){
+  try {
+    var raw = localStorage.getItem(CONFIG.FAV_KEY);
+    if (raw !== null) {
+      var arr = JSON.parse(raw);
+      return Array.isArray(arr) ? arr : [];
+    }
+    // First visit on v2: carry over any v1 favourites, then add the new defaults.
+    var list = [];
+    var old = localStorage.getItem(CONFIG.OLD_FAV_KEY);
+    if (old !== null) { var o = JSON.parse(old); if (Array.isArray(o)) list = o.slice(); }
+    CONFIG.DEFAULT_FAVOURITES.forEach(function(n){ if (list.indexOf(n) === -1) list.push(n); });
+    localStorage.setItem(CONFIG.FAV_KEY, JSON.stringify(list));
+    return list;
+  } catch(e){ return CONFIG.DEFAULT_FAVOURITES.slice(); }
+}
+function loadHiddenDivisions(){
+  try {
+    var arr = JSON.parse(localStorage.getItem(CONFIG.HIDDEN_DIVISIONS_KEY) || "[]");
+    return Array.isArray(arr) ? arr : [];
+  } catch(e){ return []; }
+}
+function toggleDivision(externalId){
+  var i = state.hiddenDivisions.indexOf(externalId);
+  if (i === -1) state.hiddenDivisions.push(externalId); else state.hiddenDivisions.splice(i,1);
+  try { localStorage.setItem(CONFIG.HIDDEN_DIVISIONS_KEY, JSON.stringify(state.hiddenDivisions)); } catch(e){}
+  render();
+}
+function loadFavColors(){
+  try {
+    var obj = JSON.parse(localStorage.getItem(CONFIG.FAV_COLORS_KEY) || "{}");
+    return (obj && typeof obj === "object") ? obj : {};
+  } catch(e){ return {}; }
+}
+function favColorFor(name){
+  return (state.favColors && state.favColors[name]) || CONFIG.DEFAULT_FAV_COLOR;
+}
+function setFavColorFor(name, hex){
+  state.favColors[name] = hex;
+  try { localStorage.setItem(CONFIG.FAV_COLORS_KEY, JSON.stringify(state.favColors)); } catch(e){}
+  render();
+}
+function saveFavourites(){
+  try { localStorage.setItem(CONFIG.FAV_KEY, JSON.stringify(state.favourites)); } catch(e){}
+}
+function isFavourite(name){ return state.favourites.indexOf(name) !== -1; }
+function toggleFavourite(name){
+  var i = state.favourites.indexOf(name);
+  if (i === -1) state.favourites.push(name); else state.favourites.splice(i,1);
+  saveFavourites();
+  render();
+}
+
+// ---------------------------------------------------------------------
+// Data refresh
+// ---------------------------------------------------------------------
+function refreshData(){
+  if (state.loading) return Promise.resolve();
+  state.loading = true;
+  state.loadStartedAt = Date.now();
+  setTimeout(function(){ if (state.loading) render(); }, 8100);
+  render();
+
+  function discover(comp){
+    return fulltimeApi.searchDivisions(comp.leagueId).then(function(r){
+      if (!r.ok) {
+        // Fall back to this league's divisions from the last good load.
+        var cached = ((state.cache && state.cache.divisions) || []).filter(function(d){ return d.leagueId === comp.leagueId; });
+        return { ok: false, divisions: cached };
+      }
+      var all = (r.data || []).map(function(d){
+        return { externalId: String(firstDefined(d, ["id","divisionId","externalId"])), name: cleanTeamName(firstDefined(d, ["name","divisionName","fullName"])) };
+      }).filter(function(d){ return d.externalId && d.name; });
+      var picked = all.filter(function(d){
+        if (comp.divisionIds) return comp.divisionIds.indexOf(d.externalId) !== -1;
+        return d.name.toUpperCase().indexOf(comp.nameFilter.toUpperCase()) !== -1;
+      });
+      picked.forEach(function(d){ d.leagueId = comp.leagueId; d.leagueName = comp.name; d.seasonId = comp.seasonId; });
+      return { ok: true, divisions: picked };
+    });
+  }
+
+  return Promise.all(CONFIG.COMPETITIONS.map(discover)).then(function(found){
+    var divisions = [];
+    found.forEach(function(f){ divisions = divisions.concat(f.divisions); });
+    var anyDiscovered = found.some(function(f){ return f.ok; });
+    if (!anyDiscovered && !divisions.length) {
+      state.loading = false;
+      if (!state.cache) state.fetchBlocked = true;
+      render();
+      return;
+    }
+    state.fetchBlocked = false;
+
+    var perDivision = (state.cache && state.cache.perDivision) || {};
+    var years = [];
+    var prevUpdatedAt = state.cache ? state.cache.updatedAt : null;
+
+    // Push whatever has arrived so far to the screen. Called after every
+    // division, so one slow division never holds the whole page on "Loading…".
+    function publish(final){
+      var anyOk = divisions.some(function(d){
+        var e = perDivision[d.externalId];
+        return e && e.lastOk && (e.lastOk.fixtures || e.lastOk.results);
+      });
+      var seasonLabel = years.length ? (Math.min.apply(null, years) === Math.max.apply(null, years) ? years[0] : (Math.min.apply(null, years) + "–" + Math.max.apply(null, years))) : (state.cache ? state.cache.seasonLabel : null);
+      state.cache = {
+        updatedAt: final && anyOk ? new Date().toISOString() : prevUpdatedAt,
+        seasonLabel: seasonLabel,
+        divisions: divisions,
+        perDivision: perDivision,
+        lastError: (final && !anyOk) ? "The Full-Time data service didn't respond for any division this time." : null
+      };
+      Cache.save(state.cache);
+      if (final) state.loading = false;
+      render();
+    }
+
+    // Only Fixtures + Results are fetched. The upstream League-table
+    // endpoint has never returned rows (always an empty table) and currently
+    // hangs for 50s+, so the table is calculated from results instead.
+    //
+    // Fixtures and Results are applied to the screen separately, the moment
+    // each one arrives, so a slow Results call never holds back the fixtures.
+    var jobs = divisions.map(function(div){
+      function apply(kind, r){
+        var entry = perDivision[div.externalId] || {};
+        entry.name = div.name;
+        entry.fixturesRaw = entry.fixturesRaw || [];
+        entry.resultsRaw = entry.resultsRaw || [];
+        entry.tableRaw = null;
+        entry.errors = entry.errors || {};
+        entry.lastOk = entry.lastOk || {};
+        if (kind === "fixtures") {
+          if (r.ok) entry.fixturesRaw = r.data;      // on failure keep the last good copy
+          entry.errors.fixtures = r.ok ? null : (r.error || "unavailable");
+          entry.lastOk.fixtures = r.ok;
+        } else {
+          if (r.ok) entry.resultsRaw = r.data;
+          entry.errors.results = r.ok ? null : (r.error || "unavailable");
+          entry.lastOk.results = r.ok;
+        }
+        perDivision[div.externalId] = entry;
+
+        if (kind === "fixtures") {
+          (entry.fixturesRaw || []).forEach(function(m){
+            var dt = firstDefined(m, ["fixtureDateTime","matchDate","date","kickOff"]);
+            var iso = parseFixtureDateTime(dt);
+            if (iso) years.push(iso.slice(0,4));
+          });
+        }
+        publish(false);
+      }
+      return Promise.all([
+        fulltimeApi.getFixtures(div.externalId, div.seasonId).then(function(r){ apply("fixtures", r); }),
+        fulltimeApi.getResults(div.externalId, div.seasonId).then(function(r){ apply("results", r); })
+      ]);
+    });
+
+    return Promise.all(jobs).then(function(){
+      publish(true);
+      state.lastRefreshTime = Date.now();
+    });
+  }).catch(function(err){
+    state.loading = false;
+    if (!state.cache) state.fetchBlocked = true;
+    render();
+  });
+}
+
+// ---------------------------------------------------------------------
+// Derived data helpers
+// ---------------------------------------------------------------------
+function getDivisionMatches(externalId){
+  if (!state.cache || !state.cache.perDivision[externalId]) return [];
+  var entry = state.cache.perDivision[externalId];
+  return mergeDivisionMatches(entry.fixturesRaw, entry.resultsRaw, entry.name);
+}
+function getDivisionTable(externalId){
+  if (!state.cache || !state.cache.perDivision[externalId]) return { rows: [], source: null };
+  var entry = state.cache.perDivision[externalId];
+  // API returns { divisionName, table: [...] }; table is currently always empty upstream.
+  var apiRows = entry.tableRaw && (Array.isArray(entry.tableRaw) ? entry.tableRaw : entry.tableRaw.table);
+  if (apiRows && apiRows.length) {
+    return { rows: apiRows.map(mapTableRow), source: "api" };
+  }
+  var matches = getDivisionMatches(externalId);
+  // No scored results yet (e.g. fixtures have arrived but results haven't):
+  // a table of everyone on 0 points would look like real positions, so show none.
+  if (!matches.some(function(m){ return m.hasScore; })) return { rows: [], source: null };
+  var teamNames = {};
+  matches.forEach(function(m){ teamNames[m.home]=1; teamNames[m.away]=1; });
+  var rows = computeTableFromMatches(matches, Object.keys(teamNames));
+  return { rows: rows, source: rows.length ? "computed" : null };
+}
+function allMatchesAcrossDivisions(){
+  // Excludes any division the user has switched off on the Divisions page —
+  // this is what makes the toggle apply everywhere (Home, Fixtures, Results).
+  if (!state.cache) return [];
+  var out = [];
+  state.cache.divisions.forEach(function(d){
+    if (state.hiddenDivisions.indexOf(d.externalId) !== -1) return;
+    getDivisionMatches(d.externalId).forEach(function(m){
+      m.divisionExternalId = d.externalId;
+      m.leagueId = d.leagueId;
+      out.push(m);
+    });
+  });
+  return out;
+}
+function favouriteMatches(){
+  // Favourites always show, even if their league has been switched off —
+  // a favourite is an explicit choice that shouldn't get hidden that way.
+  var out = [];
+  var seen = {};
+  state.favourites.forEach(function(name){
+    var div = findTeamDivision(name);
+    if (!div) return;
+    getDivisionMatches(div.externalId).forEach(function(m){
+      if (m.home !== name && m.away !== name) return;
+      var key = (m.home||"") + "|" + (m.away||"") + "|" + (m.isoDateTime||m.rawDateTime||"");
+      if (seen[key]) return;
+      seen[key] = 1;
+      m.divisionExternalId = div.externalId;
+      m.leagueId = div.leagueId;
+      out.push(m);
+    });
+  });
+  return out;
+}
+function findTeamDivision(teamName){
+  if (!state.cache) return null;
+  for (var i=0;i<state.cache.divisions.length;i++){
+    var d = state.cache.divisions[i];
+    var matches = getDivisionMatches(d.externalId);
+    for (var j=0;j<matches.length;j++){
+      if (matches[j].home === teamName || matches[j].away === teamName) return d;
+    }
+  }
+  return null;
+}
+function allTeamNames(){
+  var names = {};
+  allMatchesAcrossDivisions().forEach(function(m){ names[m.home]=1; names[m.away]=1; });
+  return Object.keys(names).sort();
+}
+function fmtDate(iso){
+  if (!iso) return "—";
+  var d = new Date(iso);
+  if (isNaN(d.getTime())) return "—";
+  var months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+  return d.getUTCDate() + " " + months[d.getUTCMonth()];
+}
+function fmtTime(iso, raw){
+  var m = raw && String(raw).match(/(\d{1,2}):(\d{2})/);
+  if (m) return m[0];
+  if (!iso) return "";
+  var d = new Date(iso);
+  if (isNaN(d.getTime())) return "";
+  var hh = d.getUTCHours(); var mm = d.getUTCMinutes();
+  if (hh === 0 && mm === 0) return "";
+  return (hh<10?"0":"")+hh+":"+(mm<10?"0":"")+mm;
+}
+function fmtUpdated(iso){
+  if (!iso) return null;
+  var d = new Date(iso);
+  if (isNaN(d.getTime())) return null;
+  var hh = d.getHours(), mm = d.getMinutes();
+  return (hh<10?"0":"")+hh+":"+(mm<10?"0":"")+mm;
+}
+function esc(s){
+  if (s === null || s === undefined) return "";
+  return String(s).replace(/[&<>"']/g, function(c){
+    return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c];
+  });
+}
+function statusTag(status){
+  if (status === "postponed" || status === "cancelled" || status === "rearranged") {
+    return '<span class="status-tag ' + status + '">' + status + "</span>";
+  }
+  return "";
+}
+
+// ---------------------------------------------------------------------
+// Rendering
+// ---------------------------------------------------------------------
+function matchRow(m, opts){
+  opts = opts || {};
+  var homeFav = isFavourite(m.home), awayFav = isFavourite(m.away);
+  var homeCls = homeFav ? "name fav" : "name";
+  var awayCls = awayFav ? "name fav" : "name";
+  var homeStyle = homeFav ? ' style="color:' + esc(favColorFor(m.home)) + '"' : '';
+  var awayStyle = awayFav ? ' style="color:' + esc(favColorFor(m.away)) + '"' : '';
+  var scoreHtml = m.hasScore
+    ? '<span class="score">' + m.homeScore + ' – ' + m.awayScore + '</span>'
+    : '<span class="vs">v</span>';
+  var timeStr = fmtTime(m.isoDateTime, m.rawDateTime);
+  var metaBits = [];
+  if (timeStr) metaBits.push(timeStr);
+  if (opts.showDivision && m.competition) metaBits.push(esc(m.competition));
+  if (m.location && opts.showVenue) metaBits.push(esc(m.location));
+  return (
+    '<div class="match">' +
+      '<div class="date">' + fmtDate(m.isoDateTime) + '</div>' +
+      '<div class="teams">' +
+        '<div class="t"><a class="' + homeCls + '"' + homeStyle + ' href="#/team/' + encodeURIComponent(m.home) + '">' + esc(m.home) + '</a>' + scoreHtml + '</div>' +
+        '<div class="t"><a class="' + awayCls + '"' + awayStyle + ' href="#/team/' + encodeURIComponent(m.away) + '">' + esc(m.away) + '</a></div>' +
+        (metaBits.length || statusTag(m.status) ? '<div class="meta">' + metaBits.join(" · ") + statusTag(m.status) + '</div>' : '') +
+      '</div>' +
+    '</div>'
+  );
+}
+
+function renderBanner(){
+  if (!state.cache) return "";
+  var bits = [];
+  if (state.cache.lastError) {
+    bits.push('<div class="banner err">Data service temporarily unavailable. Showing cached results. (Updates normally check Sundays 10am–3pm; the upstream service is sometimes unreliable.)</div>');
+  }
+  return bits.join("");
+}
+
+function renderHome(){
+  var html = "";
+  html += renderBanner();
+  if (!state.cache) return html + emptyOrLoading();
+
+  if (!state.favourites.length) {
+    html += '<h2 class="section" style="margin-top:0;">My Favourites</h2>';
+    html += '<div class="empty">No favourites yet — add a team from its page or search.</div>';
+    return html;
+  }
+
+  var fav = favouriteMatches();
+  var now = new Date().toISOString();
+  var any = false;
+  CONFIG.COMPETITIONS.forEach(function(c){
+    var leagueFav = fav.filter(function(m){ return m.leagueId === c.leagueId; });
+    var completed = leagueFav.filter(function(m){ return m.hasScore; })
+      .sort(function(a,b){ return (b.isoDateTime||"").localeCompare(a.isoDateTime||""); })
+      .slice(0,8);
+    var upcoming = leagueFav.filter(function(m){ return !m.hasScore && m.isoDateTime && m.isoDateTime >= now && m.status !== "cancelled"; })
+      .sort(function(a,b){ return (a.isoDateTime||"").localeCompare(b.isoDateTime||""); })
+      .slice(0,8);
+    if (!completed.length && !upcoming.length) return;
+    html += '<h2 class="section"' + (any ? '' : ' style="margin-top:0;"') + '>' + esc(c.name) + '</h2>';
+    any = true;
+    html += '<h3 class="subsection">Latest Results</h3>';
+    html += completed.length ? '<div class="card">' + completed.map(function(m){ return matchRow(m, {showDivision:true}); }).join("") + '</div>' : '<div class="empty">No completed results yet for your favourites.</div>';
+    html += '<h3 class="subsection">Upcoming Fixtures</h3>';
+    html += upcoming.length ? '<div class="card">' + upcoming.map(function(m){ return matchRow(m, {showDivision:true}); }).join("") + '</div>' : '<div class="empty">No upcoming fixtures found for your favourites.</div>';
+  });
+  if (!any) html += '<div class="empty" style="margin-top:0;">No results or fixtures found for your favourites yet.</div>';
+
+  html += '<h2 class="section">My Favourites</h2>';
+  html += state.favourites.map(function(n){ return renderFavouriteCard(n, {compact:true}); }).join("");
+  return html;
+}
+
+var FAV_COLOR_PRESETS = ["#3fb950", "#58a6ff", "#f85149", "#d29922", "#a371f7", "#ffffff"];
+function favColourRow(name){
+  var color = favColorFor(name);
+  var html = '<div class="colour-row">';
+  html += FAV_COLOR_PRESETS.map(function(c){
+    var on = color.toLowerCase() === c.toLowerCase();
+    return '<button class="colour-swatch' + (on ? ' on' : '') + '" style="background:' + c + ';" ' +
+      'data-fav-team-colour="' + esc(name) + '" data-colour="' + c + '" title="' + c + '"></button>';
+  }).join("");
+  html += '<input type="color" class="colour-custom" data-fav-team-colour-custom="' + esc(name) + '" value="' + esc(color) + '" title="Custom colour">';
+  html += '</div>';
+  return html;
+}
+function renderFavouriteCard(name, opts){
+  opts = opts || {};
+  var color = favColorFor(name);
+  var div = findTeamDivision(name);
+  var matches = div ? getDivisionMatches(div.externalId) : [];
+  var teamMatches = matches.filter(function(m){ return m.home === name || m.away === name; });
+  var now = new Date().toISOString();
+  var last = teamMatches.filter(function(m){ return m.hasScore; }).sort(function(a,b){ return (b.isoDateTime||"").localeCompare(a.isoDateTime||""); })[0];
+  var next = teamMatches.filter(function(m){ return !m.hasScore && m.isoDateTime && m.isoDateTime >= now; }).sort(function(a,b){ return (a.isoDateTime||"").localeCompare(b.isoDateTime||""); })[0];
+  var table = div ? getDivisionTable(div.externalId) : { rows: [] };
+  var row = table.rows.find(function(r){ return r.teamName === name; });
+
+  var found = !!div || teamMatches.length;
+  var html = '<div class="card fav-card">';
+  html += '<a href="#/team/' + encodeURIComponent(name) + '" class="fav-card-link">';
+  html += '<div style="display:flex;justify-content:space-between;align-items:center;">';
+  html += '<b style="color:' + esc(color) + ';">★ ' + esc(name) + '</b>';
+  html += '</div>';
+  if (!found) {
+    html += '<div class="row">Not found in the current U12 data yet.</div>';
+  } else {
+    html += '<div class="row">Last Result<br><b>' + (last ? esc(last.home) + ' ' + last.homeScore + ' – ' + last.awayScore + ' ' + esc(last.away) : 'No result yet') + '</b></div>';
+    html += '<div class="row">Next Fixture<br><b>' + (next ? esc(next.home) + ' v ' + esc(next.away) + ' (' + fmtDate(next.isoDateTime) + ')' : 'None scheduled') + '</b></div>';
+    html += '<div class="row">Position<br><b>' + (row ? ordinal(row.position) + ' — ' + row.points + ' pts' : 'Not available') + '</b></div>';
+  }
+  html += '</a>';
+  if (!opts.compact) html += favColourRow(name);
+  html += '</div>';
+  return html;
+}
+function ordinal(n){
+  if (n === null || n === undefined) return "—";
+  var s = ["th","st","nd","rd"], v = n % 100;
+  return n + (s[(v-20)%10] || s[v] || s[0]);
+}
+
+function renderFixtures(){
+  var html = renderBanner();
+  if (!state.cache) return html + emptyOrLoading();
+  var all = allMatchesAcrossDivisions();
+  var now = new Date().toISOString();
+  var any = false;
+  CONFIG.COMPETITIONS.forEach(function(c){
+    var upcoming = all.filter(function(m){ return m.leagueId === c.leagueId && !m.hasScore && m.isoDateTime && m.isoDateTime >= now; })
+      .sort(function(a,b){ return (a.isoDateTime||"").localeCompare(b.isoDateTime||""); });
+    if (!upcoming.length) return;
+    any = true;
+    html += '<h2 class="section">' + esc(c.name) + '</h2>';
+    html += '<div class="card">' + upcoming.map(function(m){ return matchRow(m, {showDivision:true, showVenue:true}); }).join("") + '</div>';
+  });
+  if (!any) html += '<h2 class="section">Upcoming Fixtures</h2><div class="empty">No upcoming fixtures found.</div>';
+  return html;
+}
+
+function renderResults(){
+  var html = renderBanner();
+  if (!state.cache) return html + emptyOrLoading();
+  var all = allMatchesAcrossDivisions();
+  var any = false;
+  CONFIG.COMPETITIONS.forEach(function(c){
+    var completed = all.filter(function(m){ return m.leagueId === c.leagueId && m.hasScore; })
+      .sort(function(a,b){ return (b.isoDateTime||"").localeCompare(a.isoDateTime||""); });
+    if (!completed.length) return;
+    any = true;
+    html += '<h2 class="section">' + esc(c.name) + '</h2>';
+    html += '<div class="card">' + completed.map(function(m){ return matchRow(m, {showDivision:true}); }).join("") + '</div>';
+  });
+  if (!any) html += '<h2 class="section">All Results</h2><div class="empty">No completed results yet.</div>';
+  return html;
+}
+
+function renderDivisions(){
+  var html = renderBanner();
+  if (!state.cache) return html + emptyOrLoading();
+  if (!state.cache.divisions.length) return html + '<div class="empty">No U12 divisions found.</div>';
+  html += '<div class="empty" style="padding:0 2px 10px;">Turn a division off to hide it everywhere on the site — Home, Fixtures and Results.</div>';
+  var lastLeague = null;
+  state.cache.divisions.forEach(function(d){
+    if (d.leagueName !== lastLeague) {
+      html += '<h2 class="section">' + esc(d.leagueName || "Divisions") + '</h2>';
+      lastLeague = d.leagueName;
+    }
+    var on = state.hiddenDivisions.indexOf(d.externalId) === -1;
+    html += '<div class="card div-card">' +
+      '<a class="div-link" href="#/division/' + encodeURIComponent(d.externalId) + '"><span class="name">' + esc(d.name) + '</span><span class="chev">›</span></a>' +
+      '<button class="div-toggle' + (on ? ' on' : '') + '" data-toggle-division="' + esc(d.externalId) + '" title="' + (on ? "Hide this division" : "Show this division") + '">' +
+      (on ? '👁' : '🚫') + '</button>' +
+    '</div>';
+  });
+  return html;
+}
+
+function tableHtml(rows, source){
+  if (!rows.length) return '<div class="empty">No league table available yet.</div>';
+  var html = '<div class="table-scroll"><table class="league"><thead><tr>' +
+    '<th>#</th><th>Team</th><th>P</th><th>W</th><th>D</th><th>L</th><th>GF</th><th>GA</th><th>GD</th><th>Pts</th>' +
+    '</tr></thead><tbody>';
+  rows.forEach(function(r){
+    var fav = isFavourite(r.teamName);
+    var rowStyle = fav ? ' style="color:' + esc(favColorFor(r.teamName)) + ';font-weight:700;"' : '';
+    html += '<tr' + rowStyle + '>' +
+      '<td>' + (r.position!==null?r.position:"—") + '</td>' +
+      '<td class="team"><a href="#/team/' + encodeURIComponent(r.teamName) + '">' + esc(r.teamName) + '</a></td>' +
+      '<td>' + (r.played!==null?r.played:"—") + '</td>' +
+      '<td>' + (r.won!==null?r.won:"—") + '</td>' +
+      '<td>' + (r.drawn!==null?r.drawn:"—") + '</td>' +
+      '<td>' + (r.lost!==null?r.lost:"—") + '</td>' +
+      '<td>' + (r.goalsFor!==null?r.goalsFor:"—") + '</td>' +
+      '<td>' + (r.goalsAgainst!==null?r.goalsAgainst:"—") + '</td>' +
+      '<td>' + (r.goalDifference!==null?r.goalDifference:"—") + '</td>' +
+      '<td>' + (r.points!==null?r.points:"—") + '</td>' +
+    '</tr>';
+  });
+  html += '</tbody></table></div>';
+  if (source === "computed") html += '<div class="empty" style="padding-top:8px;">Table calculated from stored results (3pts win / 1pt draw) — the league’s official table hasn’t been retrieved yet.</div>';
+  return html;
+}
+
+var divisionTab = "results";
+function renderDivision(externalId){
+  var html = renderBanner();
+  if (!state.cache) return html + emptyOrLoading();
+  var div = state.cache.divisions.filter(function(d){ return d.externalId === externalId; })[0];
+  if (!div) return html + '<div class="empty">Division not found.</div>';
+
+  var matches = getDivisionMatches(externalId);
+  var now = new Date().toISOString();
+  var completed = matches.filter(function(m){ return m.hasScore; }).sort(function(a,b){ return (b.isoDateTime||"").localeCompare(a.isoDateTime||""); });
+  var upcoming = matches.filter(function(m){ return !m.hasScore && m.isoDateTime && m.isoDateTime >= now; }).sort(function(a,b){ return (a.isoDateTime||"").localeCompare(b.isoDateTime||""); });
+  var table = getDivisionTable(externalId);
+
+  html += '<h2 class="section" style="margin-top:0;">' + esc(div.name) + '</h2>';
+  html += '<div class="tabs">' +
+    '<button data-tab="results" class="' + (divisionTab==="results"?"active":"") + '">Results</button>' +
+    '<button data-tab="fixtures" class="' + (divisionTab==="fixtures"?"active":"") + '">Fixtures</button>' +
+    '<button data-tab="table" class="' + (divisionTab==="table"?"active":"") + '">Table</button>' +
+  '</div>';
+
+  if (divisionTab === "results") {
+    html += completed.length ? '<div class="card">' + completed.map(function(m){ return matchRow(m); }).join("") + '</div>' : '<div class="empty">No completed results yet.</div>';
+  } else if (divisionTab === "fixtures") {
+    html += upcoming.length ? '<div class="card">' + upcoming.map(function(m){ return matchRow(m, {showVenue:true}); }).join("") + '</div>' : '<div class="empty">No upcoming fixtures found.</div>';
+  } else {
+    html += '<div class="card">' + tableHtml(table.rows, table.source) + '</div>';
+  }
+  return html;
+}
+
+function renderTeam(name){
+  var html = renderBanner();
+  if (!state.cache) return html + emptyOrLoading();
+  var div = findTeamDivision(name);
+  var matches = div ? getDivisionMatches(div.externalId) : [];
+  var teamMatches = matches.filter(function(m){ return m.home === name || m.away === name; });
+  if (!div && !teamMatches.length) {
+    return html + '<div class="empty">“' + esc(name) + '” wasn’t found in the current U12 data.</div>';
+  }
+  var now = new Date().toISOString();
+  var completed = teamMatches.filter(function(m){ return m.hasScore; }).sort(function(a,b){ return (b.isoDateTime||"").localeCompare(a.isoDateTime||""); });
+  var upcoming = teamMatches.filter(function(m){ return !m.hasScore && m.isoDateTime && m.isoDateTime >= now; }).sort(function(a,b){ return (a.isoDateTime||"").localeCompare(b.isoDateTime||""); });
+  var table = div ? getDivisionTable(div.externalId) : { rows: [] };
+  var row = table.rows.find(function(r){ return r.teamName === name; });
+  var fav = isFavourite(name);
+
+  html += '<div class="team-hdr">' +
+    '<h1>' + esc(name) + '</h1>' +
+    '<button class="star-btn' + (fav?'':' off') + '" id="teamFavBtn">' + (fav?'★':'☆') + '</button>' +
+  '</div>';
+  if (div) html += '<div style="color:var(--muted);font-size:13px;margin-bottom:6px;">' + esc(div.name) + (div.leagueName ? ' · ' + esc(div.leagueName) : '') + '</div>';
+
+  if (row) {
+    html += '<div class="stat-grid">' +
+      '<div class="stat"><div class="v">' + ordinal(row.position) + '</div><div class="l">Position</div></div>' +
+      '<div class="stat"><div class="v">' + (row.played!==null?row.played:"—") + '</div><div class="l">Played</div></div>' +
+      '<div class="stat"><div class="v">' + (row.points!==null?row.points:"—") + '</div><div class="l">Points</div></div>' +
+      '<div class="stat"><div class="v">' + (row.goalDifference!==null?row.goalDifference:"—") + '</div><div class="l">GD</div></div>' +
+    '</div>';
+  }
+
+  html += '<h2 class="section">Recent Results</h2>';
+  html += completed.length ? '<div class="card">' + completed.slice(0,5).map(function(m){ return matchRow(m); }).join("") + '</div>' : '<div class="empty">No results yet.</div>';
+
+  html += '<h2 class="section">Upcoming Fixtures</h2>';
+  html += upcoming.length ? '<div class="card">' + upcoming.map(function(m){ return matchRow(m, {showVenue:true}); }).join("") + '</div>' : '<div class="empty">None scheduled.</div>';
+
+  html += '<h2 class="section">Season Results</h2>';
+  html += completed.length ? '<div class="card">' + completed.map(function(m){ return matchRow(m); }).join("") + '</div>' : '<div class="empty">No results yet.</div>';
+
+  return html;
+}
+
+function renderFavourites(){
+  var html = renderBanner();
+  if (!state.cache) return html + emptyOrLoading();
+  html += '<h2 class="section" style="margin-top:0;">⭐ My Favourites</h2>';
+  if (!state.favourites.length) {
+    html += '<div class="empty">No favourites yet. Search for a team or open a team page to add one.</div>';
+  } else {
+    html += state.favourites.map(function(n){ return renderFavouriteCard(n); }).join("");
+  }
+  html += '<h2 class="section">Add a Favourite</h2>';
+  html += '<input class="search" id="favSearchInput" placeholder="Search teams to add…" autocomplete="off">';
+  html += '<div id="favSearchResults"></div>';
+  html += '<h2 class="section">Page Style</h2>';
+  html += '<div class="card" style="display:flex;justify-content:space-between;align-items:center;gap:10px;">' +
+    '<span>Old teletext style</span>' +
+    '<button id="teletextBtn" class="btn' + (state.teletext ? '' : ' ghost') + '">' + (state.teletext ? 'ON' : 'OFF') + '</button>' +
+  '</div>';
+  return html;
+}
+
+function renderSearch(query){
+  var html = '<input class="search" id="searchInput" placeholder="Search teams…" value="' + esc(query||"") + '" autocomplete="off">';
+  html += '<div id="searchResults">';
+  html += searchResultsHtml(query || "");
+  html += '</div>';
+  return html;
+}
+function searchResultsHtml(query){
+  if (!state.cache) return emptyOrLoading();
+  var q = query.trim().toLowerCase();
+  if (q.length < 2) return '<div class="empty">Type at least 2 letters…</div>';
+  var matches = allTeamNames().filter(function(n){ return n.toLowerCase().indexOf(q) !== -1; });
+  if (!matches.length) return '<div class="empty">No teams found.</div>';
+  return '<div class="card">' + matches.map(function(name){
+    var fav = isFavourite(name);
+    return '<div class="match" style="align-items:center;">' +
+      '<a href="#/team/' + encodeURIComponent(name) + '" style="flex:1;font-size:14px;">' + esc(name) + '</a>' +
+      '<button class="star-btn' + (fav?'':' off') + '" data-toggle-fav="' + esc(name) + '">' + (fav?'★':'☆') + '</button>' +
+    '</div>';
+  }).join("") + '</div>';
+}
+
+function emptyOrLoading(){
+  if (state.fetchBlocked) {
+    return '<div class="center-msg"><div class="big">⚠️</div>' +
+      "Couldn't reach the Full-Time results service.<br><br>" +
+      "The results come from a free third-party service that is sometimes slow or offline. " +
+      "Once it's back, this page will load normally and keep a saved copy for next time.<br>" +
+      '<button class="btn" style="margin-top:14px;" onclick="location.reload()">Try again</button></div>';
+  }
+  var slow = state.loading && state.loadStartedAt && (Date.now() - state.loadStartedAt > 8000);
+  return '<div class="center-msg"><span class="spinner"></span><br><br>Loading U12 results…' +
+    (slow ? '<br><br><span style="font-size:13px;">The Full-Time results service is responding slowly right now. Still trying…</span>' : '') +
+    '</div>';
+}
+
+function routeTitle(route){
+  var titles = { "/":"Home", "/fixtures":"Fixtures", "/results":"Results", "/divisions":"Divisions", "/favourites":"Favourites" };
+  return titles[route.path] || "";
+}
+
+function render(){
+  var app = document.getElementById("app");
+  var route = state.route;
+  var html = "";
+  if (route.path === "/") html = renderHome();
+  else if (route.path === "/fixtures") html = renderFixtures();
+  else if (route.path === "/results") html = renderResults();
+  else if (route.path === "/divisions") html = renderDivisions();
+  else if (route.path === "/division") html = renderDivision(route.param);
+  else if (route.path === "/team") html = renderTeam(decodeURIComponent(route.param));
+  else if (route.path === "/favourites") html = renderFavourites();
+  else if (route.path === "/search") html = renderSearch(route.param || "");
+  else html = renderHome();
+
+  app.innerHTML = html;
+  updateStatusBadge();
+  updateNav();
+  bindDynamicHandlers();
+  window.scrollTo(0,0);
+}
+
+function updateStatusBadge(){
+  var badge = document.getElementById("statusBadge");
+  var seasonEl = document.getElementById("seasonLabel");
+  if (state.cache && state.cache.seasonLabel) seasonEl.textContent = "· " + state.cache.seasonLabel + " season";
+  if (state.loading) {
+    badge.className = "badge stale"; badge.textContent = "Updating…";
+    return;
+  }
+  if (!state.cache) {
+    badge.className = "badge error"; badge.textContent = "No data";
+    return;
+  }
+  var upd = fmtUpdated(state.cache.updatedAt);
+  if (state.cache.lastError) {
+    badge.className = "badge error";
+    badge.textContent = upd ? ("Last updated " + upd) : "Unavailable";
+  } else {
+    badge.className = "badge live";
+    badge.textContent = upd ? ("Updated " + upd) : "Live";
+  }
+}
+
+function updateNav(){
+  var links = document.querySelectorAll("nav.bottom a");
+  for (var i=0;i<links.length;i++){
+    var r = links[i].getAttribute("data-route");
+    var active = (r === state.route.path) || (r === "/" && (state.route.path === "/division" || state.route.path === "/team"));
+    links[i].className = active ? "active" : "";
+  }
+}
+
+function bindDynamicHandlers(){
+  var teamFavBtn = document.getElementById("teamFavBtn");
+  if (teamFavBtn && state.route.path === "/team") {
+    teamFavBtn.onclick = function(){ toggleFavourite(decodeURIComponent(state.route.param)); };
+  }
+  var divBtns = document.querySelectorAll("[data-toggle-division]");
+  for (var j=0;j<divBtns.length;j++){
+    divBtns[j].onclick = function(e){
+      e.preventDefault();
+      toggleDivision(this.getAttribute("data-toggle-division"));
+    };
+  }
+  var teamSwatches = document.querySelectorAll("[data-fav-team-colour]");
+  for (var k=0;k<teamSwatches.length;k++){
+    teamSwatches[k].onclick = function(){
+      setFavColorFor(this.getAttribute("data-fav-team-colour"), this.getAttribute("data-colour"));
+    };
+  }
+  var teamCustomColours = document.querySelectorAll("[data-fav-team-colour-custom]");
+  for (var m=0;m<teamCustomColours.length;m++){
+    teamCustomColours[m].oninput = function(){
+      setFavColorFor(this.getAttribute("data-fav-team-colour-custom"), this.value);
+    };
+  }
+  var tabs = document.querySelectorAll(".tabs button[data-tab]");
+  for (var i=0;i<tabs.length;i++){
+    tabs[i].onclick = function(){ divisionTab = this.getAttribute("data-tab"); render(); };
+  }
+  var favSearchInput = document.getElementById("favSearchInput");
+  if (favSearchInput) {
+    favSearchInput.oninput = function(){
+      document.getElementById("favSearchResults").innerHTML = searchResultsHtml(this.value);
+      bindStarButtons();
+    };
+  }
+  var searchInput = document.getElementById("searchInput");
+  if (searchInput) {
+    searchInput.oninput = function(){
+      document.getElementById("searchResults").innerHTML = searchResultsHtml(this.value);
+      bindStarButtons();
+      history.replaceState(null, "", "#/search/" + encodeURIComponent(this.value));
+    };
+    searchInput.focus();
+  }
+  var teletextBtn = document.getElementById("teletextBtn");
+  if (teletextBtn) {
+    // Changed in place (no full re-render) so the page doesn't jump back to the top.
+    teletextBtn.onclick = function(){
+      setTeletext(!state.teletext);
+      this.textContent = state.teletext ? "ON" : "OFF";
+      this.className = "btn" + (state.teletext ? "" : " ghost");
+    };
+  }
+  bindStarButtons();
+}
+function bindStarButtons(){
+  var stars = document.querySelectorAll("[data-toggle-fav]");
+  for (var i=0;i<stars.length;i++){
+    stars[i].onclick = function(){ toggleFavourite(this.getAttribute("data-toggle-fav")); };
+  }
+}
+
+// ---------------------------------------------------------------------
+// Router
+// ---------------------------------------------------------------------
+function parseHash(){
+  var h = location.hash.replace(/^#/, "") || "/";
+  var parts = h.split("/").filter(Boolean);
+  if (parts.length === 0) return { path: "/" };
+  if (parts[0] === "division" && parts[1]) return { path: "/division", param: parts[1] };
+  if (parts[0] === "team" && parts[1]) return { path: "/team", param: parts[1] };
+  if (parts[0] === "search") return { path: "/search", param: decodeURIComponent(parts[1] || "") };
+  if (["fixtures","results","divisions","favourites"].indexOf(parts[0]) !== -1) return { path: "/" + parts[0] };
+  return { path: "/" };
+}
+window.addEventListener("hashchange", function(){
+  state.route = parseHash();
+  render();
+});
+
+// A basic search entry point via the nav isn't in the 5-item bottom nav
+// (kept to the brief's core 5), but is reachable via the home search box.
+function insertSearchEntry(){
+  var sub = document.querySelector("header.top .sub");
+  var a = document.createElement("a");
+  a.href = "#/search";
+  a.style.marginLeft = "auto";
+  a.style.fontSize = "16px";
+  a.textContent = "🔍";
+  sub.parentNode.insertBefore(a, null);
+}
+
+// ---------------------------------------------------------------------
+// Boot
+// ---------------------------------------------------------------------
+document.addEventListener("DOMContentLoaded", function(){
+  addSearchLink();
+  addUpdateButton();
+  render();
+  refreshData();
+});
+
+function addUpdateButton(){
+  var header = document.querySelector("header.top");
+  var btn = document.createElement("button");
+  btn.textContent = "🔄 Update";
+  btn.style.cssText = "position:absolute;top:calc(14px + env(safe-area-inset-top));right:80px;font-size:13px;background:none;border:none;color:var(--muted);cursor:pointer;padding:4px 8px;";
+  btn.addEventListener("click", function(e){
+    e.preventDefault();
+    if (!state.loading) refreshData();
+  });
+  header.style.position = "sticky";
+  var wrap = document.createElement("div");
+  wrap.style.position = "relative";
+  header.parentNode.insertBefore(wrap, header);
+  wrap.appendChild(header);
+  wrap.appendChild(btn);
+}
+
+function addSearchLink(){
+  var header = document.querySelector("header.top");
+  var link = document.createElement("a");
+  link.href = "#/search";
+  link.textContent = "🔍 Search";
+  link.style.cssText = "position:absolute;top:calc(14px + env(safe-area-inset-top));right:16px;font-size:13px;color:var(--muted);";
+  header.appendChild(link);
+}
+
+})();
+</script>
+</body>
+</html>
